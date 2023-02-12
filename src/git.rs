@@ -4,12 +4,28 @@ use serde_json;
 use std::process::Command;
 use unidiff::PatchSet;
 
+/// Get the current HEAD
+pub fn head() -> String {
+  match Command::new("git")
+    .arg("show")
+    .arg("--no-patch")
+    .arg("--format=%H")
+    .output()
+  {
+    Ok(output) if output.status.success() => std::str::from_utf8(&output.stdout)
+      .expect("Failed to interpret output as utf8")
+      .trim_end()
+      .to_string(),
+    _ => panic!("Failed to get the HEAD"),
+  }
+}
+
 /// Get the raw unsantised commit message text of a commit
 pub fn message(hash: &str) -> String {
   match Command::new("git")
     .arg("show")
     .arg("--no-patch")
-    .arg("--format='%B'")
+    .arg("--format=%B")
     .arg(hash)
     .output()
   {
@@ -44,13 +60,14 @@ pub fn log(hash: &str) -> Vec<CommitMeta> {
   .expect("Failed to parse as json")
 }
 
+/// Get the patchset for a particular commit
 pub fn patchset(hash: &str) -> PatchSet {
   // we use `git show` because it handles the first commit well unlike `git diff hash~ hash`
   // however couldn't find a way to totally silence the log output.
   let output = match Command::new("git")
     .arg("show")
     .arg("-p")
-    .arg("--format=%%")
+    .arg("--format=%n")
     .arg(hash)
     .output()
   {
@@ -58,23 +75,28 @@ pub fn patchset(hash: &str) -> PatchSet {
     _ => panic!("Failed to get the patch for commit:{hash}"),
   };
 
+  // ignore whitespace at the start from `--format`
+  let output = unsafe {
+    std::str::from_utf8_unchecked(&output.stdout).trim_start().as_bytes()
+  };
+
   let mut p = PatchSet::new();
-  p.parse_bytes(&output.stdout[3..]); // ignore junk at the start from `--format`
+  p.parse_bytes(output);
   p
 }
 
 /// Metadata about a commit. Contains the basic information from `git log`
 #[derive(Serialize, Deserialize, Debug)]
 pub struct CommitMeta {
-  commit: String,
-  author: Author,
-  date: DateTime<Utc>,
-  subject: String,
+  pub commit: String,
+  pub author: Author,
+  pub date: DateTime<Utc>,
+  pub subject: String,
 }
 
 /// The author of a commit
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Author {
-  name: String,
-  email: String,
+  pub name: String,
+  pub email: String,
 }
