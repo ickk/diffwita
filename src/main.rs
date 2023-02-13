@@ -1,6 +1,8 @@
 use diffguide::*;
 
 pub fn main() {
+  git::configure();
+
   let tree = git::head();
   let log = git::log(&tree);
   let sections = log.sections();

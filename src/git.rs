@@ -4,6 +4,21 @@ use serde_json;
 use std::process::Command;
 use unidiff::PatchSet;
 
+/// Set the cleanup mode on commits to "scissors" to prevent git from removing lines that start
+/// with characters like `#`, which are important for us.
+pub fn configure() {
+  match Command::new("git")
+    .arg("config")
+    .arg("--local")
+    .arg("commit.cleanup")
+    .arg("scissors")
+    .output()
+  {
+    Ok(output) if output.status.success() => (),
+    _ => panic!("Failed to execute git config command"),
+  }
+}
+
 /// Get the current HEAD
 pub fn head() -> String {
   match Command::new("git")
