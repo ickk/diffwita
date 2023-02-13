@@ -37,7 +37,7 @@ pub fn message(hash: &str) -> String {
 }
 
 /// Get a sequence of commits given a starting commit hash
-pub fn log(hash: &str) -> Vec<CommitMeta> {
+pub fn log(hash: &str) -> Log {
   let output = match Command::new("git")
     .arg("log")
     .arg("--reverse")
@@ -49,15 +49,17 @@ pub fn log(hash: &str) -> Vec<CommitMeta> {
       _ => panic!("Failed to get list of commits from commit:{hash}"),
     };
 
-  serde_json::from_str(&{
-    let mut s = String::from("[");
-    s.push_str(std::str::from_utf8(&output.stdout).expect("Failed to interpret output as utf8"));
-    s.pop();
-    s.pop();
-    s.push(']');
-    s
-  })
-  .expect("Failed to parse as json")
+  Log(
+    serde_json::from_str(&{
+      let mut s = String::from("[");
+      s.push_str(std::str::from_utf8(&output.stdout).expect("Failed to interpret output as utf8"));
+      s.pop();
+      s.pop();
+      s.push(']');
+      s
+    })
+    .expect("Failed to parse as json"),
+  )
 }
 
 /// Get the patchset for a particular commit
@@ -77,11 +79,13 @@ pub fn patchset(hash: &str) -> PatchSet {
 
   // ignore whitespace at the start from `--format`
   let output = unsafe {
-    std::str::from_utf8_unchecked(&output.stdout).trim_start().as_bytes()
+    std::str::from_utf8_unchecked(&output.stdout)
+      .trim_start()
+      .as_bytes()
   };
 
   let mut p = PatchSet::new();
-  p.parse_bytes(output);
+  p.parse_bytes(output).expect("failed to parse patchset");
   p
 }
 
@@ -99,4 +103,23 @@ pub struct CommitMeta {
 pub struct Author {
   pub name: String,
   pub email: String,
+}
+
+pub struct Log(Vec<CommitMeta>);
+
+#[derive(Debug)]
+pub struct Section {
+  pub id: usize,
+  pub text: String,
+  pub patchset: PatchSet,
+}
+
+impl Log {
+  pub fn sections(&self) -> impl Iterator<Item = Section> + '_ {
+    self.0.iter().enumerate().map(|(id, commit_meta)| Section {
+      id,
+      text: message(&commit_meta.commit),
+      patchset: patchset(&commit_meta.commit),
+    })
+  }
 }
