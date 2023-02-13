@@ -5,19 +5,20 @@ use unidiff::PatchSet;
 
 pub fn annotate(sections: impl Iterator<Item = Section>) -> impl Iterator<Item = Section> {
   sections.map(|mut section| {
+    section.text.insert_str(0, &"\n");
     section
       .text
       .insert_str(0, &(Annotation::section_begin(section.id).value + "\n"));
-
 
     section
       .text
       .push_str(&Annotation::patchset(section.id).value);
     section.text.push('\n');
 
-    section.text
-    .push_str(&Annotation::section_end(section.id).value);
-  section.text.push('\n');
+    section
+      .text
+      .push_str(&Annotation::section_end(section.id).value);
+    section.text.push('\n');
 
     section
   })
