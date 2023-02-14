@@ -36,6 +36,7 @@ pub fn head() -> String {
 }
 
 /// Get the raw unsantised commit message text of a commit
+/// Returns a tuple containing (subject, body)
 pub fn message(hash: &str) -> (String, String) {
   match Command::new("git")
     .arg("show")
