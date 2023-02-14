@@ -21,7 +21,7 @@ impl BlockRule for SectionScanner {
   }
 }
 
-pub fn add_section_scanner(md: &mut MarkdownIt) {
+pub fn add_section_rules(md: &mut MarkdownIt) {
   md.block.add_rule::<SectionScanner>();
 }
 

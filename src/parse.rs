@@ -1,4 +1,4 @@
-use crate::{git::Section, markers::Marker, section::add_section_scanner};
+use crate::{git::Section, markers::Marker, section::add_section_rules, patchset::add_patchset_rules};
 use markdown_it::{plugins::cmark, MarkdownIt, Node};
 
 pub fn annotate(sections: impl Iterator<Item = Section>) -> impl Iterator<Item = Section> {
@@ -37,7 +37,8 @@ pub fn concat(sections: impl Iterator<Item = Section>) -> String {
 pub fn build_parser() -> MarkdownIt {
   let mut parser = MarkdownIt::new();
 
-  add_section_scanner(&mut parser);
+  add_section_rules(&mut parser);
+  add_patchset_rules(&mut parser);
   cmark::add(&mut parser);
 
   parser
