@@ -36,7 +36,7 @@ pub fn head() -> String {
 }
 
 /// Get the raw unsantised commit message text of a commit
-pub fn message(hash: &str) -> String {
+pub fn message(hash: &str) -> (String, String) {
   match Command::new("git")
     .arg("show")
     .arg("--no-patch")
@@ -45,7 +45,14 @@ pub fn message(hash: &str) -> String {
     .output()
   {
     Ok(output) if output.status.success() => {
-      String::from_utf8(output.stdout).expect("Failed to interpret output as utf8")
+      let mut s = std::str::from_utf8(&output.stdout)
+        .expect("Failed to interpret output as utf8")
+        .splitn(2, "\n");
+
+      (
+        s.next().unwrap_or_default().to_owned(),
+        s.next().unwrap_or_default().to_owned(),
+      )
     },
     _ => panic!("Failed to get the message from commit:{hash}"),
   }
@@ -125,6 +132,7 @@ pub struct Log(Vec<CommitMeta>);
 #[derive(Debug)]
 pub struct Section {
   pub id: usize,
+  pub subject: String,
   pub text: String,
   pub commit: String,
   pub patchset: PatchSet,
@@ -132,11 +140,15 @@ pub struct Section {
 
 impl Log {
   pub fn sections(&self) -> impl Iterator<Item = Section> + '_ {
-    self.0.iter().enumerate().map(|(id, commit_meta)| Section {
-      id,
-      commit: commit_meta.commit.clone(),
-      text: message(&commit_meta.commit),
-      patchset: patchset(&commit_meta.commit),
+    self.0.iter().enumerate().map(|(id, commit_meta)| {
+      let (subject, body) = message(&commit_meta.commit);
+      Section {
+        id,
+        subject,
+        commit: commit_meta.commit.clone(),
+        text: body,
+        patchset: patchset(&commit_meta.commit),
+      }
     })
   }
 }

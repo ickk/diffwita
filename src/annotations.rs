@@ -17,21 +17,21 @@ impl Annotation {
     }
   }
 
-  pub fn section_begin(index: usize) -> Self {
+  pub fn section_begin(hash: &str) -> Self {
     Self {
-      value: build(&[SECTION_BEGIN, &index.to_string()]),
+      value: build(&[SECTION_BEGIN, hash]),
     }
   }
 
-  pub fn section_end(index: usize) -> Self {
+  pub fn section_end(hash: &str) -> Self {
     Self {
-      value: build(&[SECTION_END, &index.to_string()]),
+      value: build(&[SECTION_END, hash]),
     }
   }
 
-  pub fn patchset(index: usize) -> Self {
+  pub fn patchset(hash: &str) -> Self {
     Self {
-      value: build(&[PATCHSET, &index.to_string()]),
+      value: build(&[PATCHSET, hash]),
     }
   }
 }

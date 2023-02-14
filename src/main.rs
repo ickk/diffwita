@@ -7,9 +7,7 @@ pub fn main() {
   let log = git::log(&tree);
   let sections = log.sections();
   let annotated_sections = parse::annotate(sections);
-  let (text, patchsets) = parse::concat(annotated_sections);
-
-  parse::SECTION_INFO.with(|cell| cell.replace(Some(patchsets)));
+  let text = parse::concat(annotated_sections);
 
   let ast = parse::parse(text);
   // eprintln!("{:#?}", ast);

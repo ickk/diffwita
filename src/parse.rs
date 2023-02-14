@@ -6,44 +6,41 @@ use markdown_it::{
 };
 use once_cell::sync::Lazy;
 use regex::Regex;
-use std::cell::RefCell;
 use unidiff::PatchSet;
 
 pub fn annotate(sections: impl Iterator<Item = Section>) -> impl Iterator<Item = Section> {
   sections.map(|mut section| {
     section.text.insert_str(0, &"\n");
-    section
-      .text
-      .insert_str(0, &(Annotation::section_begin(section.id).value + "\n"));
+    section.text.insert_str(
+      0,
+      &(Annotation::section_begin(&section.commit).value + "\n"),
+    );
 
     section
       .text
-      .push_str(&Annotation::patchset(section.id).value);
+      .push_str(&Annotation::patchset(&section.commit).value);
     section.text.push('\n');
 
     section
       .text
-      .push_str(&Annotation::section_end(section.id).value);
+      .push_str(&Annotation::section_end(&section.commit).value);
     section.text.push('\n');
 
     section
   })
 }
 
-pub fn concat(sections: impl Iterator<Item = Section>) -> (String, PatchSetsCollection) {
-  let (text, patchsets) = sections.fold(
+pub fn concat(sections: impl Iterator<Item = Section>) -> String {
+  let (text, _patchsets) = sections.fold(
     (String::new(), vec![]),
     |(mut text, mut patchsets), section| {
-      patchsets.push((section.commit, section.patchset));
+      patchsets.push((section.commit, section.subject, section.patchset));
       text.push_str(&section.text);
       (text, patchsets)
     },
   );
-  (text, PatchSetsCollection(patchsets))
+  text
 }
-
-#[derive(Debug)]
-pub struct PatchSetsCollection(pub(crate) Vec<(String, PatchSet)>);
 
 pub fn build_parser() -> MarkdownIt {
   let mut parser = MarkdownIt::new();
@@ -60,22 +57,18 @@ pub fn parse(text: String) -> Node {
   parser.parse(&text)
 }
 
-// this is way too complicated. Should just annotate with the commit hash
-// directly; then the render function can call git::patchset directly rather
-// than keeping everything in memory and using this ugly global state hack.
-
 pub struct SectionScanner;
 
 use crate::annotations::{MARKER, SECTION_BEGIN, SECTION_END, SEP};
 static SECTION_BEGIN_RE: Lazy<Regex> = Lazy::new(|| {
   Regex::new(&format!(
-    r"^{MARKER}{SEP}{SECTION_BEGIN}{SEP}(?P<section_id>\d+){SEP}{MARKER}$"
+    r"^{MARKER}{SEP}{SECTION_BEGIN}{SEP}(?P<section_hash>[a-zA-Z0-9]+){SEP}{MARKER}$"
   ))
   .unwrap()
 });
 static SECTION_END_RE: Lazy<Regex> = Lazy::new(|| {
   Regex::new(&format!(
-    r"^{MARKER}{SEP}{SECTION_END}{SEP}(?P<section_id>\d+){SEP}{MARKER}$"
+    r"^{MARKER}{SEP}{SECTION_END}{SEP}(?P<section_hash>[a-zA-Z0-9]+){SEP}{MARKER}$"
   ))
   .unwrap()
 });
@@ -85,13 +78,9 @@ impl BlockRule for SectionScanner {
     let line = state.get_line(state.line).trim();
 
     if let Some(captures) = SECTION_BEGIN_RE.captures(line) {
-      let section_id = captures
-        .name("section_id")
-        .unwrap()
-        .as_str()
-        .parse::<usize>()
-        .unwrap();
-      Some((Node::new(SectionStart(section_id)), 1))
+      let section_hash = captures.name("section_hash").unwrap().as_str().into();
+
+      Some((Node::new(SectionStart { hash: section_hash }), 1))
     } else if SECTION_END_RE.is_match(line) {
       Some((Node::new(SectionEnd), 1))
     } else {
@@ -105,22 +94,13 @@ pub fn add_section_scanner(md: &mut MarkdownIt) {
 }
 
 #[derive(Debug)]
-struct SectionStart(usize);
-
-thread_local!(pub static SECTION_INFO: RefCell<Option<crate::parse::PatchSetsCollection>> = RefCell::new(None));
+struct SectionStart {
+  hash: String,
+}
 
 impl NodeValue for SectionStart {
   fn render(&self, node: &Node, fmt: &mut dyn Renderer) {
-    // get the data assosciated with this section
-    let commit = SECTION_INFO.with(|cell| {
-      let collection = cell.borrow();
-      collection
-        .as_ref()
-        .expect("SECTION_INFO was not populated")
-        .0[self.0] // find the `(commit, patchset)` pair at the section index
-        .0 // we only care about the commit
-        .to_owned()
-    });
+    let (subject, _) = crate::git::message(&self.hash); // kinda wasteful
 
     fmt.cr();
     fmt.open("section", &node.attrs);
@@ -129,9 +109,8 @@ impl NodeValue for SectionStart {
     fmt.cr();
     fmt.text_raw(&format!(
       "<cite>{subject}<span class='commit_hash'><a href='{commit}'>{short_commit}</a></span></cite>",
-      subject = " subject line .. ",
-      commit = commit.to_owned(),
-      short_commit = &commit[commit.len() - 7..]
+      commit = self.hash,
+      short_commit = &self.hash[0..7]
     ));
     fmt.cr();
     fmt.close("header");
