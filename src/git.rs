@@ -126,6 +126,7 @@ pub struct Log(Vec<CommitMeta>);
 pub struct Section {
   pub id: usize,
   pub text: String,
+  pub commit: String,
   pub patchset: PatchSet,
 }
 
@@ -133,6 +134,7 @@ impl Log {
   pub fn sections(&self) -> impl Iterator<Item = Section> + '_ {
     self.0.iter().enumerate().map(|(id, commit_meta)| Section {
       id,
+      commit: commit_meta.commit.clone(),
       text: message(&commit_meta.commit),
       patchset: patchset(&commit_meta.commit),
     })
