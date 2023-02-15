@@ -1,7 +1,9 @@
-use crate::{git, markers::Marker, section::add_section_rules, patchset::add_patchset_rules};
+use crate::{git, markers::Marker, patchset::add_patchset_rules, section::add_section_rules};
 use markdown_it::{plugins::cmark, MarkdownIt, Node};
 
-pub fn annotate(sections: impl Iterator<Item = git::Section>) -> impl Iterator<Item = git::Section> {
+pub fn annotate(
+  sections: impl Iterator<Item = git::Section>,
+) -> impl Iterator<Item = git::Section> {
   sections.map(|mut section| {
     section.text.insert_str(0, &"\n");
     section

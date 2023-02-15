@@ -1,6 +1,6 @@
-use diffguide::*;
-use tera::{Tera, Context};
+use diffwita::*;
 use once_cell::sync::Lazy;
+use tera::{Context, Tera};
 
 pub fn main() {
   git::configure();
@@ -20,7 +20,7 @@ static TEMPLATES: Lazy<Tera> = Lazy::new(|| {
     Err(e) => {
       eprintln!("Parsing error: {e}");
       ::std::process::exit(1);
-    }
+    },
   };
   tera.autoescape_on(vec![]);
   tera
@@ -31,7 +31,9 @@ fn template(document: &str) {
   context.insert("document", document);
 
   let tera = &TEMPLATES;
-  let html = tera.render("index.tera", &context).expect("tera failed to render index.html");
+  let html = tera
+    .render("index.tera", &context)
+    .expect("tera failed to render index.html");
 
   println!("{html}");
 }

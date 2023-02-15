@@ -99,11 +99,8 @@ cite .commit_hash::before {
   font-weight: 800;
   text-align: center;
   display: block;
-  margin: 0;
-  padding: 0;
 }
 .file p {
-  padding: 0;
   margin: 0;
 }
 .hunk {
