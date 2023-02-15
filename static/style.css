@@ -1,0 +1,112 @@
+body {
+  margin-left: auto;
+  margin-right: auto;
+  width: 60rem;
+  font-family: sans-serif;
+  font-size: 1.2rem;
+}
+section {
+  padding: 2rem;
+}
+section:hover {
+  background: #f9f9f9;
+}
+cite {
+  display: block;
+  width: 100%;
+  text-align: right;
+  font-size: 0.9rem;
+  color:rgb(143, 143, 143);
+}
+cite .commit_hash a {
+  color: rgb(90, 178, 255);
+}
+cite .commit_hash::before {
+  content: " - ";
+}
+.filename.new::before {
+  content: "Added: "
+}
+.filename.deleted::before {
+  content: "Deleted: "
+}
+.filename.changed::before {
+  content: "Changed: "
+}
+.filename {
+  padding: .5px 0.3rem;
+  display: block;
+  font-family: sans-serif;
+  font-size: 1rem;
+}
+.filename.new {
+  background: lightgreen
+}
+.filename.changed, .filename.moved {
+  background: lightsalmon
+}
+.filename.deleted {
+  background: lightcoral
+}
+.patchset .file {
+  border: 1px solid black;
+  margin: 0 1rem 1rem 1rem;
+}
+.hunk .header {
+  font-family: monospace;
+  color: white;
+  background: grey;
+}
+.hunk pre {
+  overflow-x:auto;
+  font-size: 1rem;
+}
+.hunk pre span {
+  display: inline-block;
+  width: calc(100% - 4rem);
+  margin-left: 2rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+.hunk pre span.added {
+  background: rgb(235, 248, 235);
+}
+.hunk pre span.removed {
+  background: rgb(255, 220, 220);
+}
+.hunk pre span.context {
+  color: darkgrey;
+}
+.hunk pre span::before {
+  content: attr(data-lineno);
+  display: inline-block;
+  width: 1.6rem;
+  padding: 0 .3rem;
+  margin-left: -3rem;
+  text-align: right;
+  color: #f9f9f9;
+  background: rgb(195, 195, 195);
+  margin-right: .7rem;
+  position: absolute;
+}
+.hunk pre span.added::before {
+  color: rgb(211, 227, 211);
+  text-align: center;
+}
+.file .ellipsis::before {
+  content: ". . .";
+  color: darkgrey;
+  font-weight: 800;
+  text-align: center;
+  display: block;
+  margin: 0;
+  padding: 0;
+}
+.file p {
+  padding: 0;
+  margin: 0;
+}
+.hunk {
+  margin-top: -1rem;
+  margin-bottom: -1rem;
+}

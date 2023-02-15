@@ -1,7 +1,7 @@
-use crate::{git::Section, markers::Marker, section::add_section_rules, patchset::add_patchset_rules};
+use crate::{git, markers::Marker, section::add_section_rules, patchset::add_patchset_rules};
 use markdown_it::{plugins::cmark, MarkdownIt, Node};
 
-pub fn annotate(sections: impl Iterator<Item = Section>) -> impl Iterator<Item = Section> {
+pub fn annotate(sections: impl Iterator<Item = git::Section>) -> impl Iterator<Item = git::Section> {
   sections.map(|mut section| {
     section.text.insert_str(0, &"\n");
     section
@@ -22,7 +22,7 @@ pub fn annotate(sections: impl Iterator<Item = Section>) -> impl Iterator<Item =
   })
 }
 
-pub fn concat(sections: impl Iterator<Item = Section>) -> String {
+pub fn concat(sections: impl Iterator<Item = git::Section>) -> String {
   let (text, _patchsets) = sections.fold(
     (String::new(), vec![]),
     |(mut text, mut patchsets), section| {
@@ -44,8 +44,13 @@ pub fn build_parser() -> MarkdownIt {
   parser
 }
 
-pub fn parse(text: String) -> Node {
+pub fn parse(tree: String) -> Node {
   let parser = build_parser();
+
+  let log = git::log(&tree);
+  let sections = log.sections();
+  let annotated_sections = annotate(sections);
+  let text = concat(annotated_sections);
 
   parser.parse(&text)
 }

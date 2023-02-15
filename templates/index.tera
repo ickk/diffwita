@@ -1,0 +1,8 @@
+{% extends "base.tera" %}
+{% block title %}Index{% endblock title %}
+{% block head %}
+  {{ super() }}
+{% endblock head %}
+{% block content %}
+  {{ document }}
+{% endblock content %}
